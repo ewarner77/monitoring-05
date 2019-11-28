@@ -15,8 +15,10 @@
 
 # This shows an example of using the publish.single helper function.
 import sys
+#import string
 import context  # Ensures paho is in PYTHONPATH
 import paho.mqtt.publish as publish
+import paho.mqtt.subscribe as subscribe
 from gpiozero import Button
 from time import sleep
 from datetime import datetime
@@ -39,7 +41,7 @@ ads = ADS.ADS1015(i2c)
 chan0 = AnalogIn(ads, ADS.P0)
 chan1 = AnalogIn(ads, ADS.P1)
 
-
+dummystate=' '
 
 auth = { 'username' : "ewarner77", 'password' : "my74bbug" } #setup for mqtt publishing and authentication
 button = Button(25) #use gpio pin 25
@@ -61,9 +63,18 @@ while True:
         publish.single("shop/cnc03/running", "0" , hostname="167.71.147.221", auth=auth)
         #print("Released")
 
-    print_there(10,20,("{:>5}\t{:>5.3f}".format(chan0.value, chan0.voltage)))
-    print_there(12,20,("{:>5}\t{:>5.3f}".format(chan1.value, chan1.voltage)))
-    
+    #print_there(10,20,("{:>5}\t{:>5.3f}".format(chan0.value, chan0.voltage)))
+    #print_there(12,20,("{:>5}\t{:>5.3f}".format(chan1.value, chan1.voltage)))
+
+    publish.single("shop/tools/P_house", "{:>5.3f}".format(chan0.voltage) , hostname="167.71.147.221", auth=auth)
+    publish.single("shop/tools/P_ATC", "{:>5.3f}".format(chan1.voltage) , hostname="167.71.147.221", auth=auth)
+
+    msg = subscribe.simple("shop/cnc03/rundummy", hostname="167.71.147.221", auth=auth)
+    if (('0' in dummystate) and ('1' in msg.payload.decode())):  
+        print("trig")
+        start_run()
+        
+    dummystate=msg.payload.decode()
      
     button.when_pressed=start_run
     
